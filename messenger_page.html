@@ -1,0 +1,79 @@
+<!-- Messenger Page with Public Interaction like Facebook --><html>
+  <head>
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin />
+    <link
+      rel="stylesheet"
+      as="style"
+      onload="this.rel='stylesheet'"
+      href="https://fonts.googleapis.com/css2?display=swap&family=Be+Vietnam+Pro:wght@400;500;700;900&family=Noto+Sans:wght@400;500;700;900"
+    />
+    <title>Messenger</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js"></script>
+    <script>
+      const supabase = supabase.createClient(
+        'https://vgchzuqtrmohyzojvngw.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZnY2h6dXF0cm1vaHl6b2p2bmd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTEyNzE1NzAsImV4cCI6MjA2Njg0NzU3MH0.WKcSXto5EXcS1fdScAKf6atW7tcXM9AB9jObapii_2g'
+      );async function loadConversations() {
+    const { data, error } = await supabase
+      .from('messages')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) {
+      console.error('Failed to load messages:', error);
+    } else {
+      const container = document.getElementById('message-list');
+      container.innerHTML = '';
+      data.forEach((msg) => {
+        const el = document.createElement('div');
+        el.className = "flex items-center gap-4 bg-gray-50 px-4 min-h-[72px] py-2 justify-between border-b";
+        el.innerHTML = `
+          <div class="flex items-center gap-4">
+            <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-14 w-14" style="background-image: url('${msg.avatar_url || 'https://placehold.co/100'}');"></div>
+            <div class="flex flex-col justify-center">
+              <p class="text-[#101418] text-base font-medium leading-normal line-clamp-1">${msg.sender_name}</p>
+              <p class="text-[#5c708a] text-sm font-normal leading-normal line-clamp-2">${msg.content}</p>
+            </div>
+          </div>
+          <div class="shrink-0">
+            <p class="text-[#5c708a] text-sm font-normal leading-normal">${new Date(msg.created_at).toLocaleTimeString()}</p>
+          </div>
+        `;
+        container.appendChild(el);
+      });
+    }
+  }
+
+  async function sendMessage() {
+    const sender = document.getElementById('sender').value;
+    const message = document.getElementById('message').value;
+    if (!sender || !message) return alert('Nama & pesan wajib diisi.');
+    const { error } = await supabase.from('messages').insert({
+      sender_name: sender,
+      content: message,
+      avatar_url: 'https://placehold.co/100'
+    });
+    if (error) {
+      alert('Gagal kirim: ' + error.message);
+    } else {
+      document.getElementById('message').value = '';
+      loadConversations();
+    }
+  }
+
+  window.onload = loadConversations;
+</script>
+
+  </head>
+  <body class="bg-gray-50" style='font-family: "Be Vietnam Pro", "Noto Sans", sans-serif;'>
+    <div class="p-4">
+      <h2 class="text-2xl font-bold mb-4 text-center">Messenger</h2>
+      <div class="flex flex-col gap-2 mb-4">
+        <input id="sender" placeholder="Nama Anda" class="form-input px-4 py-2 rounded-md border" />
+        <textarea id="message" placeholder="Tulis pesan untuk publik..." class="form-textarea px-4 py-2 rounded-md border"></textarea>
+        <button onclick="sendMessage()" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Kirim Pesan</button>
+      </div>
+      <div id="message-list"></div>
+    </div>
+  </body>
+</html>

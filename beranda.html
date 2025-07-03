@@ -1,0 +1,93 @@
+<!DOCTYPE html><html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Beranda | NONGKRONG Platform</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js"></script>
+  </head>
+  <body class="bg-gray-100 text-gray-900">
+    <!-- Navbar -->
+    <header class="bg-white shadow-md py-4 px-6 flex justify-between items-center">
+      <h1 class="text-xl font-bold text-blue-600">NONGKRONG</h1>
+      <button id="logoutBtn" class="text-sm text-red-500">Logout</button>
+    </header><!-- Post Creator -->
+<section class="p-4 bg-white shadow mt-4 mx-auto max-w-2xl rounded-xl">
+  <textarea id="postContent" class="w-full border p-3 rounded-md" rows="3" placeholder="Apa yang kamu pikirkan?"></textarea>
+  <button id="postBtn" class="mt-2 bg-blue-500 text-white px-4 py-2 rounded">Posting</button>
+</section>
+
+<!-- Posts Feed -->
+<main id="feed" class="mt-4 space-y-4 px-4 max-w-2xl mx-auto"></main>
+
+<script>
+  const supabase = supabase.createClient(
+    'https://vgchzuqtrmohyzojvngw.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZnY2h6dXF0cm1vaHl6b2p2bmd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTEyNzE1NzAsImV4cCI6MjA2Njg0NzU3MH0.WKcSXto5EXcS1fdScAKf6atW7tcXM9AB9jObapii_2g'
+  );
+
+  async function checkLogin() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      window.location.href = '/login.html';
+    }
+    return session.user;
+  }
+
+  async function fetchPosts() {
+    const { data, error } = await supabase.from('posts').select('*, profiles(*)').order('created_at', { ascending: false });
+    const feed = document.getElementById('feed');
+    feed.innerHTML = '';
+    data.forEach(post => {
+      const el = document.createElement('div');
+      el.className = 'bg-white p-4 shadow rounded';
+      el.innerHTML = `
+        <div class="font-bold">${post.profiles.full_name || 'Pengguna'}</div>
+        <div class="text-sm text-gray-500 mb-2">${new Date(post.created_at).toLocaleString()}</div>
+        <p class="mb-2">${post.content}</p>
+        <div class="flex gap-4 text-sm">
+          <button onclick="likePost('${post.id}')" class="text-blue-500">❤️ Like (${post.likes})</button>
+          <button onclick="commentPrompt('${post.id}')" class="text-green-500">💬 Komentar</button>
+        </div>
+      `;
+      feed.appendChild(el);
+    });
+  }
+
+  async function likePost(postId) {
+    await supabase.rpc('like_post', { post_input: postId });
+    fetchPosts();
+  }
+
+  async function postContent(userId) {
+    const content = document.getElementById('postContent').value;
+    if (!content) return alert('Tulis sesuatu dulu!');
+    await supabase.from('posts').insert([{ user_id: userId, content }]);
+    document.getElementById('postContent').value = '';
+    fetchPosts();
+  }
+
+  async function commentPrompt(postId) {
+    const comment = prompt("Tulis komentar kamu:");
+    const { data: { user } } = await supabase.auth.getUser();
+    if (comment) {
+      await supabase.from('comments').insert([{ post_id: postId, user_id: user.id, content: comment }]);
+      alert('Komentar berhasil ditambahkan!');
+    }
+  }
+
+  document.getElementById('postBtn').addEventListener('click', async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    postContent(user.id);
+  });
+
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    await supabase.auth.signOut();
+    location.reload();
+  });
+
+  checkLogin().then(fetchPosts);
+</script>
+
+  </body>
+</html>

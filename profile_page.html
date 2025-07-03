@@ -1,0 +1,85 @@
+<!DOCTYPE html><html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Profile | NONGKRONG Platform</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js"></script>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700;900&family=Noto+Sans:wght@400;500;700;900&display=swap"
+    />
+    <style>
+      body {
+        font-family: "Be Vietnam Pro", "Noto Sans", sans-serif;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-50">
+    <div id="profileContainer" class="min-h-screen"></div><script>
+  const supabaseUrl = 'https://vgchzuqtrmohyzojvngw.supabase.co';
+  const supabaseKey =
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZnY2h6dXF0cm1vaHl6b2p2bmd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTEyNzE1NzAsImV4cCI6MjA2Njg0NzU3MH0.WKcSXto5EXcS1fdScAKf6atW7tcXM9AB9jObapii_2g';
+  const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+  async function loadProfile() {
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('email', 'jesikamahjong@gmail.com')
+      .single();
+
+    if (error || !profile) {
+      window.location.href = 'https://wa.me/6285810526151';
+      return;
+    }
+
+    document.getElementById('profileContainer').innerHTML = `
+      <div class="p-4">
+        <div class="flex items-center justify-between">
+          <h1 class="text-xl font-bold text-gray-800">${profile.full_name || 'No Name'}</h1>
+          <a href="profile_edit.html" class="text-blue-600 text-sm underline">Edit Profile</a>
+        </div>
+        <p class="text-gray-600">${profile.bio || 'No bio available'}</p>
+        <div class="mt-4 flex gap-4">
+          <img src="${profile.avatar_url || 'https://placehold.co/128'}" class="w-32 h-32 rounded-full object-cover" />
+          <img src="${profile.cover_url || 'https://placehold.co/400x200'}" class="w-64 h-32 object-cover rounded-xl" />
+        </div>
+      </div>
+
+      <div class="p-4">
+        <h2 class="text-lg font-bold mb-2">Postingan</h2>
+        <div id="postList" class="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4"></div>
+      </div>
+    `;
+
+    loadPosts();
+  }
+
+  async function loadPosts() {
+    const { data: posts } = await supabase
+      .from('posts')
+      .select('*')
+      .eq('email', 'jesikamahjong@gmail.com')
+      .order('created_at', { ascending: false });
+
+    const postList = document.getElementById('postList');
+
+    postList.innerHTML =
+      posts?.map(
+        (post) => `
+        <div class="rounded-lg overflow-hidden shadow-sm border border-gray-200">
+          <img src="${post.image_url || 'https://placehold.co/300'}" class="w-full aspect-square object-cover" />
+          <div class="p-2">
+            <p class="text-sm text-gray-800">${post.caption || ''}</p>
+          </div>
+        </div>
+      `
+      ).join('') || '<p>Tidak ada postingan</p>';
+  }
+
+  loadProfile();
+</script>
+
+  </body>
+</html>

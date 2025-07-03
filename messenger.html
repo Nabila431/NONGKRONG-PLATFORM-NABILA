@@ -1,0 +1,32 @@
+<section>
+  <h2>Messenger 🔴</h2>
+  <div id="chat-box" style="height:200px; overflow:auto; background:#1e1e1e; padding:10px;"></div>
+  <input id="chat-input" placeholder="Ketik pesan..." />
+  <button onclick="sendMessage()">Kirim</button>
+</section>
+
+<script type="module">
+  import { supabase } from '../main.js';
+
+  const chatBox = document.getElementById('chat-box');
+  const chatInput = document.getElementById('chat-input');
+
+  async function loadChat() {
+    const { data } = await supabase.from('messages').select('*').order('created_at', { ascending: true });
+    chatBox.innerHTML = data.map(msg => `<p>${msg.sender}: ${msg.text}</p>`).join('');
+  }
+
+  loadChat();
+
+  window.sendMessage = async function () {
+    const text = chatInput.value;
+    await supabase.from('messages').insert([{ sender: 'guest', text }]);
+    chatInput.value = '';
+    loadChat();
+  };
+
+  supabase
+    .channel('public:messages')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, loadChat)
+    .subscribe();
+</script>

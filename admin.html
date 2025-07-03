@@ -1,0 +1,23 @@
+<section id="admin-panel">
+  <h2>Admin Panel 🛠️</h2>
+  <p>Selamat datang, Admin!</p>
+  <ul id="message-list"></ul>
+</section>
+
+<script type="module">
+  import { supabase } from '../main.js';
+
+  const userEmail = localStorage.getItem('email');
+
+  if (userEmail !== 'jesikamahjong@gmail.com') {
+    window.location.href = 'https://wa.me/6285810526151';
+  }
+
+  async function loadMessages() {
+    const { data } = await supabase.from('messages').select('*').order('created_at', { ascending: false });
+    const list = document.getElementById('message-list');
+    list.innerHTML = data.map(msg => `<li>${msg.sender}: ${msg.text}</li>`).join('');
+  }
+
+  loadMessages();
+</script>

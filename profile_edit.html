@@ -1,0 +1,119 @@
+<!DOCTYPE html><html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Edit Profile - NONGKRONG</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700;900&family=Noto+Sans:wght@400;500;700;900&display=swap"
+    />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js"></script>
+    <style>
+      body {
+        font-family: 'Be Vietnam Pro', 'Noto Sans', sans-serif;
+      }
+    </style>
+  </head>
+  <body class="bg-slate-50">
+    <div class="min-h-screen flex flex-col justify-between">
+      <!-- Header -->
+      <div class="flex items-center p-4 pb-2 justify-between">
+        <h2 class="text-[#0d131c] text-lg font-bold text-center flex-1">Edit profile</h2>
+      </div><!-- Profile Info -->
+  <div class="flex p-4 flex-col items-center">
+    <div class="rounded-full w-32 h-32 bg-cover bg-center" id="avatarPreview" style="background-image:url('')"></div>
+    <p class="text-xl font-bold mt-3" id="name">Nabila Ahmad</p>
+    <p class="text-[#4b6d9b]" id="email">nabila@email.com</p>
+  </div>
+
+  <!-- Bio -->
+  <div class="px-4">
+    <h2 class="font-bold text-xl pb-2">Bio</h2>
+    <textarea id="bio" class="w-full bg-[#e7ecf3] rounded-lg p-4 min-h-[100px]" placeholder="Tulis biodatamu..."></textarea>
+  </div>
+
+  <!-- Avatar upload -->
+  <div class="px-4 mt-5">
+    <h2 class="font-bold text-xl pb-2">Foto Profil</h2>
+    <input type="file" id="avatarInput" accept="image/*" class="w-full" />
+  </div>
+
+  <!-- Cover upload -->
+  <div class="px-4 mt-5">
+    <h2 class="font-bold text-xl pb-2">Cover Foto</h2>
+    <input type="file" id="coverInput" accept="image/*" class="w-full" />
+    <div id="coverPreview" class="rounded-lg w-full h-48 bg-cover bg-center mt-3"></div>
+  </div>
+
+  <!-- Save button -->
+  <div class="p-4">
+    <button onclick="saveProfile()" class="w-full h-12 bg-blue-600 text-white font-bold rounded-lg">Save</button>
+  </div>
+
+  <div class="h-10"></div>
+</div>
+
+<script>
+  const supabaseUrl = "https://vgchzuqtrmohyzojvngw.supabase.co";
+  const supabaseKey = "eyJhbGciOiJI..."; // <-- (potong aman)
+  const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+  const adminEmail = "jesikamahjong@gmail.com";
+  const userEmail = adminEmail; // auto bypass karena kamu minta tanpa login
+
+  // Cek admin
+  if (userEmail !== adminEmail) {
+    window.location.href = "https://wa.me/6285810526151";
+  }
+
+  async function loadProfile() {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("name, email, bio, avatar_url, cover_url")
+      .eq("email", userEmail)
+      .single();
+
+    if (data) {
+      document.getElementById("name").innerText = data.name;
+      document.getElementById("email").innerText = data.email;
+      document.getElementById("bio").value = data.bio || "";
+      document.getElementById("avatarPreview").style.backgroundImage = `url(${data.avatar_url})`;
+      document.getElementById("coverPreview").style.backgroundImage = `url(${data.cover_url})`;
+    }
+  }
+
+  async function saveProfile() {
+    const bio = document.getElementById("bio").value;
+
+    let avatar_url = null;
+    let cover_url = null;
+
+    const avatarFile = document.getElementById("avatarInput").files[0];
+    if (avatarFile) {
+      const { data, error } = await supabase.storage.from("avatars").upload(`public/${Date.now()}-${avatarFile.name}`, avatarFile, { upsert: true });
+      if (data) avatar_url = `${supabaseUrl}/storage/v1/object/public/avatars/${data.path}`;
+    }
+
+    const coverFile = document.getElementById("coverInput").files[0];
+    if (coverFile) {
+      const { data, error } = await supabase.storage.from("covers").upload(`public/${Date.now()}-${coverFile.name}`, coverFile, { upsert: true });
+      if (data) cover_url = `${supabaseUrl}/storage/v1/object/public/covers/${data.path}`;
+    }
+
+    const update = {
+      bio,
+      ...(avatar_url && { avatar_url }),
+      ...(cover_url && { cover_url }),
+    };
+
+    await supabase.from("profiles").update(update).eq("email", userEmail);
+    alert("Profil berhasil diperbarui!");
+    loadProfile();
+  }
+
+  loadProfile();
+</script>
+
+  </body>
+</html>
